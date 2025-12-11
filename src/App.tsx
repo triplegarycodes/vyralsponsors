@@ -9,6 +9,7 @@ import Modules from "./pages/Modules";
 import Neo from "./pages/Neo";
 import Vision from "./pages/Vision";
 import Support from "./pages/Support";
+import Sponsors from "./pages/Sponsors";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/neo" element={<Neo />} />
           <Route path="/vision" element={<Vision />} />
           <Route path="/support" element={<Support />} />
+          <Route path="/sponsors" element={<Sponsors />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
