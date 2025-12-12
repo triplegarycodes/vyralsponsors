@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -28,11 +29,13 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const sponsorshipTiers = [
   {
     name: "Spark",
+    tierKey: "spark",
     tagline: "Entry-level support for individuals passionate about teen innovation.",
     price: "$25",
     priceNote: "One-time contribution",
@@ -48,8 +51,9 @@ const sponsorshipTiers = [
   },
   {
     name: "Ignite",
+    tierKey: "ignite",
     tagline: "Perfect for educators, small businesses, and youth organizations.",
-    price: "$199",
+    price: "$149",
     priceNote: "Per semester or campaign",
     icon: <Flame className="text-orange-400" size={32} />,
     perks: [
@@ -66,8 +70,9 @@ const sponsorshipTiers = [
   },
   {
     name: "Inferno",
+    tierKey: "inferno",
     tagline: "Premium brand partnership for maximum visibility and impact.",
-    price: "$999",
+    price: "$499",
     priceNote: "Annual partnership",
     icon: <Zap className="text-accent" size={32} />,
     perks: [
@@ -84,8 +89,9 @@ const sponsorshipTiers = [
   },
   {
     name: "Cosmic Partner",
+    tierKey: "cosmic",
     tagline: "Enterprise-level investment in the future of teen productivity.",
-    price: "$4,999+",
+    price: "$1,499",
     priceNote: "Custom enterprise package",
     icon: <Crown className="text-pink-400" size={32} />,
     perks: [
@@ -134,6 +140,34 @@ const merchItems = [
 ];
 
 const Sponsors = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  // Handle success/cancel from Stripe checkout
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const canceled = searchParams.get("canceled");
+    const tier = searchParams.get("tier");
+
+    if (success === "true") {
+      toast({
+        title: "Payment Successful! 🎉",
+        description: tier 
+          ? `Thank you for becoming a ${tier.charAt(0).toUpperCase() + tier.slice(1)} sponsor! Check your email for next steps.`
+          : "Thank you for your support! Check your email for next steps.",
+      });
+      // Clear URL params
+      setSearchParams({});
+    } else if (canceled === "true") {
+      toast({
+        title: "Payment Canceled",
+        description: "No worries! You can complete your sponsorship anytime.",
+        variant: "destructive",
+      });
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams, toast]);
+
   return (
     <Layout>
       {/* Hero Section */}
