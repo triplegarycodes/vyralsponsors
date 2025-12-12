@@ -44,12 +44,165 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json | null
+          payment_provider: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          product_id: string
+          purchaser_email: string
+          purchaser_name: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          payment_provider?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          product_id: string
+          purchaser_email: string
+          purchaser_name?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          payment_provider?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          product_id?: string
+          purchaser_email?: string
+          purchaser_name?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json | null
+          id: string
+          name: string
+          price_cents: number
+          product_type: Database["public"]["Enums"]["product_type"]
+          stripe_price_id: string | null
+          tier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          name: string
+          price_cents: number
+          product_type: Database["public"]["Enums"]["product_type"]
+          stripe_price_id?: string | null
+          tier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          name?: string
+          price_cents?: number
+          product_type?: Database["public"]["Enums"]["product_type"]
+          stripe_price_id?: string | null
+          tier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      sponsor_interest: {
+        Row: {
+          company_name: string
+          company_type: string | null
+          contact_email: string
+          contact_name: string
+          created_at: string
+          id: string
+          message: string | null
+          tier_interest: string | null
+        }
+        Insert: {
+          company_name: string
+          company_type?: string | null
+          contact_email: string
+          contact_name: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          tier_interest?: string | null
+        }
+        Update: {
+          company_name?: string
+          company_type?: string | null
+          contact_email?: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          tier_interest?: string | null
+        }
+        Relationships: []
+      }
       waitlist: {
         Row: {
           created_at: string
           email: string
           id: string
           name: string | null
+          role: Database["public"]["Enums"]["waitlist_role"] | null
           source: string | null
         }
         Insert: {
@@ -57,6 +210,7 @@ export type Database = {
           email: string
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["waitlist_role"] | null
           source?: string | null
         }
         Update: {
@@ -64,6 +218,7 @@ export type Database = {
           email?: string
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["waitlist_role"] | null
           source?: string | null
         }
         Relationships: []
@@ -76,7 +231,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      product_type: "supporter_access" | "sponsorship" | "donation"
+      waitlist_role: "student" | "parent" | "educator" | "sponsor" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -203,6 +360,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      product_type: ["supporter_access", "sponsorship", "donation"],
+      waitlist_role: ["student", "parent", "educator", "sponsor", "other"],
+    },
   },
 } as const
