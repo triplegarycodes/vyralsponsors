@@ -13,6 +13,8 @@ const navLinks = [
   { name: "Sponsors", path: "/sponsors" },
 ];
 
+const vyralViewLink = { name: "VYRAL VIEW", path: "/vyral-view" };
+
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,6 +59,17 @@ export function Navbar() {
                 layoutId="logo-glow"
               />
             </motion.div>
+          </Link>
+
+          {/* VYRAL VIEW Link - Adjacent to Logo */}
+          <Link
+            to={vyralViewLink.path}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all duration-300 ml-2"
+          >
+            <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
+            <span className="text-xs font-display font-semibold text-primary">
+              {vyralViewLink.name}
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -120,12 +133,30 @@ export function Navbar() {
             className="fixed inset-x-4 top-24 z-40 glass rounded-2xl p-6 md:hidden"
           >
             <div className="flex flex-col gap-2">
+              {/* VYRAL VIEW Link - Featured at top */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Link
+                  to={vyralViewLink.path}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-lg font-medium transition-colors ${
+                    location.pathname === vyralViewLink.path
+                      ? "bg-primary/20 text-primary"
+                      : "bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20"
+                  }`}
+                >
+                  <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  {vyralViewLink.name}
+                </Link>
+              </motion.div>
+              
               {navLinks.map((link, index) => (
                 <motion.div
                   key={link.path}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: (index + 1) * 0.05 }}
                 >
                   <Link
                     to={link.path}
