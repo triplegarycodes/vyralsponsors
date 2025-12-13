@@ -165,7 +165,7 @@ export default {
   					transform: 'translateX(0)'
   				}
   			},
-  			'shimmer': {
+  			shimmer: {
   				'0%': {
   					backgroundPosition: '-200% 0'
   				},
@@ -181,7 +181,7 @@ export default {
   					opacity: '1'
   				}
   			},
-  			'float': {
+  			float: {
   				'0%, 100%': {
   					transform: 'translateY(0)'
   				},
@@ -189,7 +189,7 @@ export default {
   					transform: 'translateY(-20px)'
   				}
   			},
-  			'orbit': {
+  			orbit: {
   				'0%': {
   					transform: 'rotate(0deg) translateX(100px) rotate(0deg)'
   				},
@@ -205,10 +205,10 @@ export default {
   			'fade-in-up': 'fade-in-up 0.8s ease-out forwards',
   			'scale-in': 'scale-in 0.4s ease-out forwards',
   			'slide-in-right': 'slide-in-right 0.4s ease-out',
-  			'shimmer': 'shimmer 2s linear infinite',
+  			shimmer: 'shimmer 2s linear infinite',
   			'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-  			'float': 'float 6s ease-in-out infinite',
-  			'orbit': 'orbit 20s linear infinite'
+  			float: 'float 6s ease-in-out infinite',
+  			orbit: 'orbit 20s linear infinite'
   		},
   		backgroundImage: {
   			'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
