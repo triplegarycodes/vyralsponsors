@@ -10,7 +10,11 @@ const sampleTasks = [
   { id: 4, text: "Plan tomorrow's priorities", completed: false },
 ];
 
-export function VyraModule() {
+interface VyraModuleProps {
+  onTaskComplete?: () => void;
+}
+
+export function VyraModule({ onTaskComplete }: VyraModuleProps) {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [tasks, setTasks] = useState(sampleTasks);
@@ -32,9 +36,17 @@ export function VyraModule() {
   };
 
   const toggleTask = (id: number) => {
+    const task = tasks.find(t => t.id === id);
+    const wasCompleted = task?.completed;
+    
     setTasks(tasks.map(task => 
       task.id === id ? { ...task, completed: !task.completed } : task
     ));
+    
+    // Notify Neo when a task is completed
+    if (!wasCompleted && onTaskComplete) {
+      onTaskComplete();
+    }
   };
 
   const completedCount = tasks.filter(t => t.completed).length;
