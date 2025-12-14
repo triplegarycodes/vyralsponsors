@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { VyraModule } from "@/components/vyral-view/VyraModule";
 import { VBoardModule } from "@/components/vyral-view/VBoardModule";
 import { ZoneModule } from "@/components/vyral-view/ZoneModule";
+import { NeoPresence } from "@/components/neo/NeoPresence";
+import { NeoPanel } from "@/components/neo/NeoPanel";
+import { NeoChat } from "@/components/neo/NeoChat";
+import { DailyPulse } from "@/components/neo/DailyPulse";
+import { useNeoContext } from "@/hooks/useNeoContext";
 import { Zap, Palette, Users } from "lucide-react";
 
 type ModuleKey = "vyra" | "vboard" | "zone";
@@ -37,11 +42,40 @@ const modules = [
 
 export default function VyralView() {
   const [activeModule, setActiveModule] = useState<ModuleKey>("vyra");
+  const [isNeoPanelOpen, setIsNeoPanelOpen] = useState(false);
+  const [isNeoChatOpen, setIsNeoChatOpen] = useState(false);
+  
+  const {
+    context,
+    dailyPulse,
+    trackModuleVisit,
+    trackTaskComplete,
+  } = useNeoContext();
+
+  // Track module visits
+  useEffect(() => {
+    trackModuleVisit(activeModule);
+  }, [activeModule, trackModuleVisit]);
+
+  const handleModuleSwitch = (module: ModuleKey) => {
+    setActiveModule(module);
+  };
+
+  const handleNeoClick = () => {
+    if (isNeoChatOpen) {
+      setIsNeoChatOpen(false);
+    } else if (isNeoPanelOpen) {
+      setIsNeoPanelOpen(false);
+      setIsNeoChatOpen(true);
+    } else {
+      setIsNeoPanelOpen(true);
+    }
+  };
 
   return (
     <Layout>
       <div className="min-h-screen pt-24 pb-16">
-        {/* Hero Section */}
+        {/* Hero Section with Daily Pulse */}
         <section className="container mx-auto px-4 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -49,6 +83,16 @@ export default function VyralView() {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
+            {/* Neo's Daily Pulse */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6"
+            >
+              <DailyPulse pulse={dailyPulse} />
+            </motion.div>
+
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -120,7 +164,7 @@ export default function VyralView() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {activeModule === "vyra" && <VyraModule />}
+              {activeModule === "vyra" && <VyraModule onTaskComplete={trackTaskComplete} />}
               {activeModule === "vboard" && <VBoardModule />}
               {activeModule === "zone" && <ZoneModule />}
             </motion.div>
@@ -150,6 +194,29 @@ export default function VyralView() {
           </motion.div>
         </section>
       </div>
+
+      {/* Neo Presence (floating orb) */}
+      <NeoPresence
+        context={context}
+        onClick={handleNeoClick}
+        isActive={isNeoPanelOpen || isNeoChatOpen}
+      />
+
+      {/* Neo Panel (smart actions, tips, decisions) */}
+      <NeoPanel
+        isOpen={isNeoPanelOpen}
+        onClose={() => setIsNeoPanelOpen(false)}
+        context={context}
+        dailyPulse={dailyPulse}
+        onModuleSwitch={handleModuleSwitch}
+      />
+
+      {/* Neo Chat (secondary, on-demand) */}
+      <NeoChat
+        isOpen={isNeoChatOpen}
+        onClose={() => setIsNeoChatOpen(false)}
+        context={context}
+      />
     </Layout>
   );
 }
