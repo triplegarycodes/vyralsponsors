@@ -4,14 +4,8 @@ import { Loader2, CheckCircle2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-
-const contactSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  email: z.string().email("Please enter a valid email address").max(255),
-  subject: z.string().optional(),
-  message: z.string().min(10, "Message must be at least 10 characters").max(2000),
-});
+import { contactFormSchema } from "@/lib/validation";
+import { normalizeError, logError } from "@/lib/errors";
 
 interface ContactFormProps {
   submissionType?: string;
@@ -40,7 +34,7 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validation = contactSchema.safeParse(formData);
+    const validation = contactFormSchema.safeParse(formData);
     if (!validation.success) {
       toast({
         title: "Invalid input",
@@ -55,10 +49,10 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
     try {
       const { error } = await supabase.from("contact_submissions").insert([
         {
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
           subject: formData.subject || null,
-          message: formData.message,
+          message: formData.message.trim(),
           submission_type: submissionType,
         },
       ]);
@@ -71,10 +65,10 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
         description: "We'll get back to you as soon as possible.",
       });
     } catch (error) {
-      console.error("Contact form error:", error);
+      logError("ContactForm", error);
       toast({
         title: "Something went wrong",
-        description: "Please try again later.",
+        description: normalizeError(error),
         variant: "destructive",
       });
     } finally {
@@ -89,7 +83,7 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
         animate={{ opacity: 1, scale: 1 }}
         className="text-center p-8 rounded-2xl glass-card"
       >
-        <CheckCircle2 className="mx-auto text-primary mb-4" size={48} />
+        <CheckCircle2 className="mx-auto text-primary mb-4" size={48} aria-hidden="true" />
         <h3 className="font-display text-xl font-semibold text-foreground mb-2">
           Message Received!
         </h3>
@@ -104,31 +98,35 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label htmlFor="contact-name" className="block text-sm font-medium text-foreground mb-2">
             Name *
           </label>
           <input
+            id="contact-name"
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
             maxLength={100}
+            autoComplete="name"
             className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             placeholder="Your name"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label htmlFor="contact-email" className="block text-sm font-medium text-foreground mb-2">
             Email *
           </label>
           <input
+            id="contact-email"
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
             maxLength={255}
+            autoComplete="email"
             className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             placeholder="your@email.com"
           />
@@ -136,10 +134,11 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
+        <label htmlFor="contact-subject" className="block text-sm font-medium text-foreground mb-2">
           Subject
         </label>
         <select
+          id="contact-subject"
           name="subject"
           value={formData.subject}
           onChange={handleChange}
@@ -155,10 +154,11 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
+        <label htmlFor="contact-message" className="block text-sm font-medium text-foreground mb-2">
           Message *
         </label>
         <textarea
+          id="contact-message"
           name="message"
           value={formData.message}
           onChange={handleChange}
@@ -172,10 +172,10 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
 
       <NeonButton type="submit" disabled={isLoading} className="w-full sm:w-auto">
         {isLoading ? (
-          <Loader2 className="animate-spin" size={18} />
+          <Loader2 className="animate-spin" size={18} aria-label="Sending..." />
         ) : (
           <>
-            <Send size={18} />
+            <Send size={18} aria-hidden="true" />
             Send Message
           </>
         )}

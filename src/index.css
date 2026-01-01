@@ -86,6 +86,21 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
   }
+
+  /* Enhanced focus states for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove focus ring for mouse users */
+  :focus:not(:focus-visible) {
+    @apply outline-none ring-0;
+  }
+
+  /* Skip link for keyboard users */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md;
+  }
 }
 
 @layer utilities {
