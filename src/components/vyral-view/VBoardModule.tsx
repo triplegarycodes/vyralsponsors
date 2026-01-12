@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { PenLine, Tag, Calendar, Sparkles, Plus, ChevronRight, Lock } from "lucide-react";
+import { PenLine, Tag, Calendar, Plus, ChevronRight, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { VBoardAgent } from "@/components/vboard/VBoardAgent";
+import { moderateContent } from "@/lib/contentModeration";
+import { toast } from "sonner";
 
 const sampleNotes = [
   {
@@ -39,6 +42,40 @@ const tagColors: Record<string, string> = {
 export function VBoardModule() {
   const [journalEntry, setJournalEntry] = useState("");
   const [selectedNote, setSelectedNote] = useState<number | null>(null);
+  const [showAgent, setShowAgent] = useState(false);
+
+  const handleJournalChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    
+    // Real-time content moderation check
+    if (value.length > 0 && value.length % 30 === 0) {
+      const check = moderateContent(value);
+      if (!check.isClean) {
+        if (check.severity === 'critical') {
+          toast.error(check.message, { duration: 5000 });
+        } else if (check.severity !== 'none') {
+          toast.warning("Let's keep our writing positive and respectful 💙", { duration: 2000 });
+        }
+      }
+    }
+    
+    setJournalEntry(value);
+  }, []);
+
+  const handleSaveEntry = useCallback(() => {
+    if (!journalEntry.trim()) return;
+    
+    // Final content check before saving
+    const check = moderateContent(journalEntry);
+    if (!check.isClean) {
+      toast.error(check.message || "Please review your entry for inappropriate content.");
+      return;
+    }
+    
+    // For now, just show success (actual save would go to Supabase)
+    toast.success("Entry saved! ✨");
+    setJournalEntry("");
+  }, [journalEntry]);
 
   return (
     <div className="glass-card p-6 md:p-8">
@@ -55,53 +92,73 @@ export function VBoardModule() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Journal Writing Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-2 bg-secondary/30 rounded-2xl p-6 border border-border/50"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <PenLine className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-semibold">Today's Canvas</h3>
-            <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </span>
-          </div>
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Journal Writing Area */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-secondary/30 rounded-2xl p-6 border border-border/50"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <PenLine className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-semibold">Today's Canvas</h3>
+              <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </span>
+            </div>
 
-          <Textarea
-            value={journalEntry}
-            onChange={(e) => setJournalEntry(e.target.value)}
-            placeholder="What's on your mind today? Write freely..."
-            className="min-h-[200px] bg-background/50 border-border/50 resize-none focus:border-primary/50 text-base"
-          />
+            <Textarea
+              value={journalEntry}
+              onChange={handleJournalChange}
+              placeholder="What's on your mind today? Write freely..."
+              className="min-h-[200px] bg-background/50 border-border/50 resize-none focus:border-primary/50 text-base"
+            />
 
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary gap-1">
-                <Tag className="w-4 h-4" />
-                Add Tags
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent gap-1">
-                <Sparkles className="w-4 h-4" />
-                AI Prompt
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary gap-1">
+                  <Tag className="w-4 h-4" />
+                  Add Tags
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`gap-1 ${showAgent ? 'text-primary' : 'text-muted-foreground hover:text-accent'}`}
+                  onClick={() => setShowAgent(!showAgent)}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {showAgent ? 'Hide Agent' : 'AI Agent'}
+                </Button>
+              </div>
+              <Button 
+                size="sm" 
+                className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
+                disabled={!journalEntry.trim()}
+                onClick={handleSaveEntry}
+              >
+                Save Entry
               </Button>
             </div>
-            <Button 
-              size="sm" 
-              className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
-              disabled={!journalEntry.trim()}
-            >
-              Save Entry
-            </Button>
-          </div>
 
-          <p className="text-xs text-muted-foreground mt-4 text-center">
-            Creativity without pressure. Your thoughts, your pace.
-          </p>
-        </motion.div>
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              Creativity without pressure. Your thoughts, your pace.
+            </p>
+          </motion.div>
+
+          {/* AI Agent Panel */}
+          {showAgent && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <VBoardAgent />
+            </motion.div>
+          )}
+        </div>
 
         {/* Notes Sidebar */}
         <motion.div
