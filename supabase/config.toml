@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.neo-suggest]
 verify_jwt = false
+
+[functions.vboard-agent]
+verify_jwt = false

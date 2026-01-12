@@ -196,6 +196,33 @@ export type Database = {
         }
         Relationships: []
       }
+      vboard_trials: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          id: string
+          last_used_at: string | null
+          max_trials: number
+          trials_used: number
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          id?: string
+          last_used_at?: string | null
+          max_trials?: number
+          trials_used?: number
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          id?: string
+          last_used_at?: string | null
+          max_trials?: number
+          trials_used?: number
+        }
+        Relationships: []
+      }
       waitlist: {
         Row: {
           created_at: string
