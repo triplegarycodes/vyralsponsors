@@ -10,6 +10,7 @@ const BLOCKED_PATTERNS = [
   // Profanity
   /\b(f+[u*@]+c+k+|sh[i1!]+t|b[i1!]+tch|a+ss+h+o+l+e)\b/gi,
   /\b(c+u+n+t|d[i1!]+ck|wh+o+r+e|sl+u+t|fa+g+|n+[i1!]+gg+)\b/gi,
+  /\b(damn+|hell|crap|piss)\b/gi,
   // Self-harm (highest priority - trigger supportive response)
   /\b(kill\s*(my)?self|suicide|suicidal|want\s*to\s*die|end\s*(my)?life)\b/gi,
   /\b(cutting\s*(my)?self|self[\s-]*harm|hurt\s*(my)?self)\b/gi,
@@ -18,8 +19,9 @@ const BLOCKED_PATTERNS = [
   /\b(school\s*shooting|mass\s*murder|terrorist)\b/gi,
   // Sexual
   /\b(porn|pornography|xxx|nsfw|hentai|orgasm|masturbat)\b/gi,
+  /\b(sex|sexy|nude|naked)\b/gi,
   // Drugs
-  /\b(cocaine|heroin|meth|crack|lsd|mdma|ecstasy)\b/gi,
+  /\b(cocaine|heroin|meth|crack|lsd|mdma|ecstasy|weed|marijuana)\b/gi,
   // Hate
   /\b(hate\s+(gays?|blacks?|whites?|jews?|muslims?))\b/gi,
   /\b(nazi|white\s*supremacy|kkk)\b/gi,
@@ -32,7 +34,7 @@ const SELF_HARM_PATTERNS = [
 ];
 
 interface AgentRequest {
-  type: 'brainstorm' | 'analyze' | 'prompt' | 'expand';
+  type: 'brainstorm' | 'analyze' | 'prompt' | 'expand' | 'navigate' | 'plan' | 'create';
   input: string;
   context?: string;
   fileContent?: string;
@@ -41,14 +43,12 @@ interface AgentRequest {
 function checkContent(text: string): { blocked: boolean; isSelfHarm: boolean } {
   const normalizedText = text.toLowerCase();
   
-  // Check for self-harm first
   for (const pattern of SELF_HARM_PATTERNS) {
     if (pattern.test(normalizedText)) {
       return { blocked: true, isSelfHarm: true };
     }
   }
   
-  // Check other blocked content
   for (const pattern of BLOCKED_PATTERNS) {
     if (pattern.test(normalizedText)) {
       return { blocked: true, isSelfHarm: false };
@@ -78,7 +78,7 @@ Here are some ideas:
 • Tell me about a goal you're working toward
 • What's something that made you smile recently?
 
-I'm here to help with brainstorming, creative writing, analyzing ideas, and more! ✨`;
+I'm here to help with brainstorming, creative writing, planning your day, and more! ✨`;
 }
 
 serve(async (req) => {
@@ -91,7 +91,6 @@ serve(async (req) => {
     
     console.log(`VBoard Agent request - Type: ${type}, Input length: ${input?.length || 0}`);
 
-    // Validate input
     if (!input || typeof input !== 'string' || input.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: 'Please provide some input to work with.' }),
@@ -99,7 +98,6 @@ serve(async (req) => {
       );
     }
 
-    // Check content moderation for input
     const inputCheck = checkContent(input);
     if (inputCheck.blocked) {
       console.log('Blocked content detected in input');
@@ -113,7 +111,6 @@ serve(async (req) => {
       );
     }
 
-    // Check file content if provided
     if (fileContent) {
       const fileCheck = checkContent(fileContent);
       if (fileCheck.blocked) {
@@ -130,53 +127,126 @@ serve(async (req) => {
       }
     }
 
-    // Get API key
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('AI service not configured');
     }
 
-    // Build system prompt based on request type
-    let systemPrompt = `You are Neo, a friendly and creative AI agent within VBoard - a digital canvas for teens to explore ideas, write, and create.
+    // Build comprehensive system prompt based on request type
+    let systemPrompt = `You are Neo, a friendly and intelligent AI agent within Vyral View - a teen productivity and creativity platform.
 
-Your personality:
-- Warm, encouraging, and supportive
-- Creative and imaginative
-- Concise but helpful (keep responses under 300 words unless expanding content)
-- Never preachy or condescending
-- Use occasional emojis naturally (not excessively)
+YOUR PERSONALITY:
+- Warm, encouraging, and genuinely helpful
+- Creative and imaginative, but practical
+- Concise but thorough (keep responses under 400 words unless expanding content)
+- Never preachy, condescending, or overly enthusiastic
+- Use emojis sparingly and naturally (1-3 per response max)
+- Speak like a smart, supportive friend
 
-CRITICAL RULES:
+CRITICAL SAFETY RULES:
 - NEVER discuss violence, self-harm, drugs, sexual content, or hate speech
 - If asked about inappropriate topics, redirect to something positive
 - Keep everything teen-appropriate and safe
-- Focus on creativity, growth, learning, and positive expression
-- Be supportive but never give medical, legal, or professional advice`;
+- Focus on creativity, productivity, growth, learning, and positive expression
+- Never give medical, legal, financial, or professional advice
+- If someone seems distressed, be supportive and suggest professional resources
+
+THE VYRAL ECOSYSTEM:
+- VYRA: Focus timer, task management, productivity tracking
+- VBoard: Creative journaling, writing, brainstorming canvas
+- ZONE: Community, profile, ecosystem discovery
+- Neo (you): AI co-pilot that helps with all of the above`;
 
     let userPrompt = '';
 
     switch (type) {
       case 'brainstorm':
-        systemPrompt += `\n\nYou're helping brainstorm ideas. Generate 3-5 creative, actionable ideas based on the user's input. Format them as a numbered list with brief explanations.`;
+        systemPrompt += `
+
+BRAINSTORM MODE: Generate 4-6 creative, actionable ideas. Format as a numbered list with brief explanations. Be specific and inspiring. Consider the user's context and suggest ideas they might not have thought of.`;
         userPrompt = `Help me brainstorm ideas about: ${input}${context ? `\n\nContext: ${context}` : ''}`;
         break;
 
+      case 'plan':
+        systemPrompt += `
+
+DAILY PLANNING MODE: Help organize the user's day for maximum productivity and wellbeing. Consider:
+- Energy levels throughout the day
+- Work/study blocks with breaks
+- Time for creativity and relaxation
+- Realistic time estimates
+- Priority ordering
+
+Provide a structured but flexible plan. Use time blocks when helpful. Include breaks and self-care.`;
+        userPrompt = `Help me plan my day. Here's what I need to accomplish or my goals: ${input}`;
+        break;
+
+      case 'navigate':
+        systemPrompt += `
+
+NAVIGATION MODE: Guide the user through Vyral's features and help them find what they need. You know:
+- VYRA has: Focus timer (Pomodoro-style), task lists, streak tracking, customizable sessions
+- VBoard has: Creative writing space, brainstorming tools, file analysis, prompt generation
+- ZONE has: Profile viewing, community stats, ecosystem discovery
+
+Suggest specific features based on what they want to do. Be a helpful guide.`;
+        userPrompt = `I want to: ${input}. What features should I use and how?`;
+        break;
+
+      case 'create':
+        systemPrompt += `
+
+CREATIVE CONTENT MODE: Help the user create safe, appropriate, and inspiring content. This could be:
+- Poetry, short stories, journal entries
+- Gratitude lists, reflection prompts
+- Creative descriptions, character sketches
+- Song lyrics, spoken word pieces
+- Personal mantras, affirmations
+
+Be creative and expressive while keeping everything teen-appropriate. Match the user's requested style and tone.`;
+        userPrompt = `Help me create: ${input}`;
+        break;
+
       case 'analyze':
-        systemPrompt += `\n\nYou're analyzing content creatively. Provide thoughtful observations, themes, and creative insights. Be constructive and encouraging.`;
+        systemPrompt += `
+
+ANALYSIS MODE: Provide thoughtful, constructive analysis. Look for:
+- Key themes and patterns
+- Strengths and areas for development
+- Creative insights and connections
+- Actionable suggestions
+
+Be encouraging while offering genuine, helpful feedback.`;
         userPrompt = fileContent 
           ? `Analyze this content creatively:\n\n${fileContent.slice(0, 5000)}\n\nUser's focus: ${input}`
           : `Analyze this idea or content: ${input}`;
         break;
 
       case 'prompt':
-        systemPrompt += `\n\nYou're providing a creative writing prompt. Generate an inspiring, thought-provoking prompt that sparks imagination. Keep it open-ended but evocative.`;
+        systemPrompt += `
+
+PROMPT GENERATION MODE: Create an inspiring, thought-provoking creative prompt that:
+- Sparks imagination and curiosity
+- Is open-ended but evocative
+- Matches the user's interests if specified
+- Is safe and appropriate for teens
+- Could lead to meaningful creative work`;
         userPrompt = input.trim() 
           ? `Create a writing prompt inspired by: ${input}` 
-          : 'Give me a creative writing prompt for today';
+          : 'Give me a creative writing prompt that will inspire something meaningful';
         break;
 
       case 'expand':
-        systemPrompt += `\n\nYou're helping expand on an idea or piece of writing. Add depth, explore angles, suggest directions, and help develop the concept further. Be creative but stay true to the original spirit.`;
+        systemPrompt += `
+
+EXPANSION MODE: Help develop and expand on the user's idea. Add:
+- Depth and detail
+- New angles and perspectives
+- Specific examples
+- Possible directions to explore
+- Connections to related ideas
+
+Stay true to the original spirit while enriching the concept.`;
         userPrompt = `Help me expand on this:\n\n${input}`;
         break;
 
@@ -184,7 +254,6 @@ CRITICAL RULES:
         userPrompt = input;
     }
 
-    // Call AI gateway
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -192,13 +261,13 @@ CRITICAL RULES:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 800,
-        temperature: 0.7,
+        max_tokens: 1000,
+        temperature: 0.75,
       }),
     });
 
@@ -224,7 +293,6 @@ CRITICAL RULES:
     const data = await response.json();
     let aiResponse = data.choices?.[0]?.message?.content || '';
 
-    // Final content check on AI response
     const responseCheck = checkContent(aiResponse);
     if (responseCheck.blocked) {
       console.warn('AI response contained blocked content, filtering');
