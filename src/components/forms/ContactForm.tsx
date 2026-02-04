@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Loader2, CheckCircle2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
+  const formStartTimeRef = useRef<number>(Date.now());
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -34,6 +35,7 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Client-side validation for UX
     const validation = contactFormSchema.safeParse(formData);
     if (!validation.success) {
       toast({
@@ -47,17 +49,25 @@ export function ContactForm({ submissionType = "general" }: ContactFormProps) {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.from("contact_submissions").insert([
-        {
+      // Use edge function for server-side validation
+      const response = await supabase.functions.invoke("submit-contact-form", {
+        body: {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           subject: formData.subject || null,
           message: formData.message.trim(),
           submission_type: submissionType,
+          formStartTime: formStartTimeRef.current,
         },
-      ]);
+      });
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error.message || "Submission failed");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       setIsSuccess(true);
       toast({

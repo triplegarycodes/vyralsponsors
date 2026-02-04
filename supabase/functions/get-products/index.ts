@@ -77,7 +77,7 @@ serve(async (req) => {
 
     if (error) {
       logStep("Error fetching products", { error });
-      throw error;
+      throw new Error("Unable to fetch products");
     }
 
     logStep("Products fetched", { count: products?.length });

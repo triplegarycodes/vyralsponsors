@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.submit-sponsor-interest]
 verify_jwt = false
 
+[functions.submit-contact-form]
+verify_jwt = false
+
 [functions.neo-chat]
 verify_jwt = false
 
