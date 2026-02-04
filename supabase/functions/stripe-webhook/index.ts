@@ -14,7 +14,7 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) throw new Error("Payment service unavailable");
     logStep("Stripe key verified");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
@@ -23,10 +23,10 @@ serve(async (req) => {
 
     // Require webhook signature verification - no fallback for security
     if (!webhookSecret) {
-      throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+      throw new Error("Webhook verification unavailable");
     }
     if (!signature) {
-      throw new Error("Missing stripe-signature header");
+      throw new Error("Invalid request");
     }
 
     const event: Stripe.Event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
