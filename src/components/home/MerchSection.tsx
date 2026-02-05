@@ -1,103 +1,160 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { ShoppingBag, ArrowRight } from "lucide-react";
 
-const products = [
-  {
-    name: "Loading Future → ERROR. Future = Now",
-    type: "Premium Hoodie",
-    description: "Statement piece for the forward-thinking teen. Ultra-soft fabric, oversized fit.",
-    placeholder: true,
-  },
-  {
-    name: "Neo Band",
-    type: "Smart Wearable",
-    description: "Track habits, receive gentle nudges, and stay connected to your goals.",
-    placeholder: true,
-  },
-  {
-    name: "Vybes UI Skins",
-    type: "Digital Cosmetics",
-    description: "Customize your VYRAL experience with exclusive interface themes.",
-    placeholder: true,
-  },
-  {
-    name: "Vyra Cards",
-    type: "Digital Collectibles",
-    description: "Earn and trade unique cards as you level up your journey.",
-    placeholder: true,
-  },
-];
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price_cents: number;
+  image_url: string | null;
+  category: string | null;
+  slug: string | null;
+}
 
 export function MerchSection() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, description, price_cents, image_url, category, slug")
+      .eq("active", true)
+      .not("category", "is", null)
+      .limit(4);
+
+    if (!error && data) {
+      setProducts(data);
+    }
+    setLoading(false);
+  };
+
+  const formatPrice = (cents: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(cents / 100);
+  };
+
   return (
     <section className="py-24 md:py-32 relative">
       <div className="container mx-auto px-6">
         <SectionHeading
-          badge="Coming Soon"
+          badge="Official Store"
           title={
             <>
-              <span className="gradient-text">VYRAL</span> Merch & Gear
+              <span className="gradient-text">VYRAL</span> Gear
             </>
           }
-          description="Express your journey with exclusive drops. Each piece is designed to make a statement."
+          description="Premium wearables and apparel designed for teens with vision."
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product, index) => (
-            <motion.div
-              key={product.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <motion.div
-                whileHover={{ y: -8 }}
-                className="group relative overflow-hidden rounded-2xl glass-card"
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="glass-card rounded-2xl overflow-hidden animate-pulse"
               >
-                {/* Placeholder Image Area */}
-                <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center relative overflow-hidden">
+                <div className="aspect-square bg-muted" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 bg-muted rounded w-1/3" />
+                  <div className="h-5 bg-muted rounded w-3/4" />
+                  <div className="h-6 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Shop Coming Soon</h3>
+            <p className="text-muted-foreground">
+              Premium gear is on the way. Check back soon!
+            </p>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Link to={`/shop/${product.slug}`}>
                   <motion.div
-                    initial={{ opacity: 0.5 }}
-                    whileHover={{ opacity: 0.8, scale: 1.1 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20"
-                  />
-                  <ShoppingBag size={48} className="text-muted-foreground/30 relative z-10" />
-                  
-                  {/* Coming Soon Badge */}
-                  <div className="absolute top-4 right-4 px-3 py-1 text-xs font-display font-semibold bg-primary/80 text-primary-foreground rounded-full">
-                    Coming Soon
-                  </div>
-                </div>
+                    whileHover={{ y: -8 }}
+                    className="group relative overflow-hidden rounded-2xl glass-card cursor-pointer"
+                  >
+                    {/* Product Image */}
+                    <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center relative overflow-hidden">
+                      {product.image_url ? (
+                        <motion.img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      ) : (
+                        <ShoppingBag size={48} className="text-muted-foreground/30" />
+                      )}
 
-                {/* Content */}
-                <div className="p-5">
-                  <span className="text-xs text-primary font-semibold uppercase tracking-wider">
-                    {product.type}
-                  </span>
-                  <h3 className="font-display text-lg font-semibold text-foreground mt-1 mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2">
-                    {product.description}
-                  </p>
-                </div>
+                      {/* Category Badge */}
+                      <Badge className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm text-foreground border-0 capitalize">
+                        {product.category}
+                      </Badge>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-5">
+                      <h3 className="font-display text-lg font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-muted-foreground text-sm line-clamp-1 mb-2">
+                        {product.description}
+                      </p>
+                      <p className="font-display text-xl font-bold gradient-text">
+                        {formatPrice(product.price_cents)}
+                      </p>
+                    </div>
+                  </motion.div>
+                </Link>
               </motion.div>
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Note */}
-        <motion.p
+        {/* View All Button */}
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-muted-foreground text-sm mt-12"
+          className="text-center mt-12"
         >
-          Product renders coming soon. Join the waitlist to get first access.
-        </motion.p>
+          <Button asChild size="lg" variant="outline" className="group">
+            <Link to="/shop">
+              View All Products
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        </motion.div>
       </div>
     </section>
   );
