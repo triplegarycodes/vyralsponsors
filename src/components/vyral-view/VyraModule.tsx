@@ -20,7 +20,7 @@ export function VyraModule({ onTaskComplete }: VyraModuleProps) {
   const [tasks, setTasks] = useState(sampleTasks);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => prev - 1);

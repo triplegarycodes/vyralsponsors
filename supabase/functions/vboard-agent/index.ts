@@ -5,6 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting: 15 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 15;
+const RATE_WINDOW_MS = 60 * 1000;
+
+const checkRateLimit = (ip: string): boolean => {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= RATE_LIMIT) return false;
+  record.count++;
+  return true;
+};
+
 // Content moderation patterns (server-side validation)
 const BLOCKED_PATTERNS = [
   // Profanity
@@ -114,6 +131,35 @@ serve(async (req) => {
         JSON.stringify({ error: 'Please provide some input to work with.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (input.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: 'Input too long (max 5000 characters).' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (context !== undefined && (typeof context !== 'string' || context.length > 2000)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid context (must be text under 2000 chars).' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (fileContent !== undefined) {
+      if (typeof fileContent !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'File content must be text.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (fileContent.length > 10000) {
+        return new Response(
+          JSON.stringify({ error: 'File too large (max 10 KB).' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     const inputCheck = checkContent(input);
