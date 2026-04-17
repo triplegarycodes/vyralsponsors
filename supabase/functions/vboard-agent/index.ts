@@ -133,6 +133,35 @@ serve(async (req) => {
       );
     }
 
+    if (input.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: 'Input too long (max 5000 characters).' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (context !== undefined && (typeof context !== 'string' || context.length > 2000)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid context (must be text under 2000 chars).' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (fileContent !== undefined) {
+      if (typeof fileContent !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'File content must be text.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (fileContent.length > 10000) {
+        return new Response(
+          JSON.stringify({ error: 'File too large (max 10 KB).' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const inputCheck = checkContent(input);
     if (inputCheck.blocked) {
       console.log('Blocked content detected in input');
